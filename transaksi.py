@@ -17,37 +17,126 @@ from tkinter import *
 from tkinter import ttk, messagebox
 
 csv = 'keuangan.csv'
+dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(dir, csv)
 
 def relative_to_assets(file_path):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(current_dir, "assets\\frame0", file_path)
+    return os.path.join(dir, "assets\\frame0", file_path)
+
+def switch(jenis):
+    global button_image_2, button_image_3, button_image_1
+
+    if jenis == 'Pemasukan':
+        button_image_2 = PhotoImage(
+            file=relative_to_assets("button_2.png"))
+        button_2 = Label(
+            image=button_image_2,
+            borderwidth=0,
+            highlightthickness=0,
+            relief="flat",
+        )
+        button_2.place(
+            x=18.0,
+            y=59.0,
+            width=158.0,
+            height=40.0
+        )
+
+        button_image_3 = PhotoImage(
+            file=relative_to_assets("button_3.png"))
+        button_3 = Button(
+            image=button_image_3,
+            borderwidth=0,
+            highlightthickness=0,
+            command=lambda: switch('Pengeluaran'),
+            relief="flat"
+        )
+        button_3.place(
+            x=184.0,
+            y=59.0,
+            width=159.0,
+            height=41.0
+        )
+
+        combobox['values']=("Uang Masuk", "Gaji", "Investasi")
+        combobox.current(0)
+
+    elif jenis == 'Pengeluaran':
+        button_image_2 = PhotoImage(
+            file=relative_to_assets("button_2_1.png"))
+        button_2 = Button(
+            image=button_image_2,
+            borderwidth=0,
+            highlightthickness=0,
+            command=lambda: switch('Pemasukan'),
+            relief="flat",
+        )
+        button_2.place(
+            x=18.0,
+            y=59.0,
+            width=158.0,
+            height=40.0
+        )
+
+        button_image_3 = PhotoImage(
+            file=relative_to_assets("button_3_1.png"))
+        button_3 = Label(
+            image=button_image_3,
+            borderwidth=0,
+            highlightthickness=0,
+            relief="flat"
+        )
+        button_3.place(
+            x=184.0,
+            y=59.0,
+            width=159.0,
+            height=41.0
+        )
+        combobox['values']=(
+            'Makanan',
+            'Transportasi',
+            'Kebutuhan Bulanan',
+            'Belanja',
+            'Pendidikan',
+            'Kesehatan',
+            'Entertainment'
+        )
+        combobox.current(0)
+    else:
+        pass
+    
+    button_1['command'] = lambda: transaksi(jenis)
+
 
 def run_file(nama_file):
+    dir = os.path.dirname(os.path.abspath(__file__))
+    file = os.path.join(dir, nama_file)
     window.destroy()
     subprocess.run(["python", file])
     sys.exit()
 
-def pemasukan():
+def transaksi(jenis):
     try:
         jumlah = int(entry_1.get())
         keterangan = entry_2.get()
         kategori = combobox.get()
         tanggal = cal.get()
+
         if jumlah <= 0:
             raise AssertionError
         else:
+            # print(jenis, jumlah, keterangan, kategori, tanggal)
+
             new_data = {
-                'Uang': [jumlah],
+                'Uang': [jumlah if jenis == 'Pemasukan' else jumlah * -1],
                 'Kategori': [kategori],
                 'Tanggal': [tanggal],
-                'Jenis': ['Pemasukan'],
+                'Jenis': [jenis],
                 'Keterangan': [keterangan],
             }
             new_df = pandas.DataFrame(new_data)
-            merged_df = pandas.concat([df, new_df], ignore_index=True)
-            merged_df.to_csv(csv, index=False)
+            new_df.to_csv(csv_path, mode='a', index=False, header=False)
             messagebox.showinfo("Sukses", "Transaksi berhasil ditambahkan")
-            run_file("homepage.py")
     except AssertionError:
         messagebox.showerror("Error", "Jumlah tidak boleh 0 atau kurang")
     except ValueError:
@@ -156,7 +245,7 @@ button_3 = Button(
     image=button_image_3,
     borderwidth=0,
     highlightthickness=0,
-    command=lambda: run_file("transaksi_pengeluaran.py"),
+    command=lambda: switch('Pengeluaran'),
     relief="flat"
 )
 button_3.place(
@@ -304,7 +393,7 @@ button_1 = Button(
     image=button_image_1,
     borderwidth=0,
     highlightthickness=0,
-    command=pemasukan,
+    command=lambda: transaksi('Pemasukan'),
     relief="flat"
 )
 button_1.place(
@@ -315,7 +404,7 @@ button_1.place(
 )
 
 try:
-    df = pandas.read_csv(csv, parse_dates=['Tanggal'], dayfirst=True)
+    df = pandas.read_csv(csv_path, parse_dates=['Tanggal'], dayfirst=True)
 except FileNotFoundError:
     jawaban = messagebox.askyesnocancel(
         "File Tidak Ditemukan!",
@@ -335,7 +424,7 @@ except FileNotFoundError:
     else:
         sys.exit()
 
-df = pandas.read_csv(csv)
+df = pandas.read_csv(csv_path)
 
 window.resizable(False, False)
 window.mainloop()

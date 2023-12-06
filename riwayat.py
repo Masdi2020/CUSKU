@@ -17,51 +17,139 @@ from pathlib import Path
 from tkinter import ttk, messagebox
 
 csv = 'keuangan.csv'
+dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(dir, csv)
 image_dict = {}
 image_list = []
+jenis1 = 'Pemasukan'
 
 locale.setlocale(locale.LC_NUMERIC, 'id_ID')
 locale.setlocale(locale.LC_TIME, 'id_ID')
 
 def relative_to_assets(file_path):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(current_dir, "assets\\frame7", file_path)
+    return os.path.join(dir, "assets\\frame7", file_path)
 
 def run_file(nama_file):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    file = os.path.join(current_dir, nama_file)
+    file = os.path.join(dir, nama_file)
     window.destroy()
     subprocess.run(["python", file])
     sys.exit()
 
-def scroll_config(event):
-    canvas_b.configure(scrollregion=canvas_b.bbox('all'))
-    canvas_b.yview_moveto(0)
+def scrollbar():
+    global scrollbar1, canvas_b
 
-    if canvas_b.winfo_width() >= canvas_b.winfo_reqwidth():
+    scrollbar1 = ttk.Scrollbar(
+        b,
+        orient=VERTICAL,
+        command=canvas_b.yview,
+    )
+
+    canvas_b.configure(yscrollcommand=scrollbar1.set)
+    canvas_b.bind('<Configure>', scroll_config)
+
+def scroll_config(event):
+    canvas_b.update_idletasks()
+    canvas_size = canvas_b.winfo_reqwidth(), canvas_b.winfo_reqheight()
+    scrollregion = canvas_b.bbox('all')
+
+    canvas_b.configure(scrollregion=scrollregion)
+
+    if scrollregion[2] <= canvas_size[0]:
         canvas_b.unbind('<Left>')
         canvas_b.unbind('<Right>')
     else:
         canvas_b.bind('<Left>', lambda e: canvas_b.xview_scroll(-1, 'units'))
         canvas_b.bind('<Right>', lambda e: canvas_b.xview_scroll(1, 'units'))
 
-    if canvas_b.winfo_height() >= canvas_b.winfo_reqheight():
-        canvas_b.unbind('<Up>')
-        canvas_b.unbind('<Down>')
+    if scrollregion[3] <= canvas_size[1]:
+        scrollbar1.pack_forget()
     else:
+        scrollbar1.pack(side='right', fill='y')
+        scrollbar1.place(
+            x=345,
+            height=389
+        )
+        
+        canvas_b.bind_all('<MouseWheel>', lambda e: canvas_b.yview_scroll(int(-1 * (e.delta / 120)), 'units'))
         canvas_b.bind('<Up>', lambda e: canvas_b.yview_scroll(-1, 'units'))
         canvas_b.bind('<Down>', lambda e: canvas_b.yview_scroll(1, 'units'))
 
-    if canvas_b.winfo_height() >= canvas_b.winfo_reqheight():
-        canvas_b.unbind('<MouseWheel>')
-        scrollbar.pack_forget()
-    else:
-        canvas_b.bind_all('<MouseWheel>', lambda f: canvas_b.yview_scroll(int(-1 * (f.delta / 120)), 'units'))
-        scrollbar.pack(side='right', fill='y')
-        scrollbar.place(
-            x=345,
-            height = 389
+def switch(jenis):
+    global button_image_1, button_image_2, jenis1
+
+    jenis1 = jenis
+
+    if jenis == 'Pengeluaran':
+        button_image_1 = PhotoImage(
+            file=relative_to_assets('button_1_1.png'))
+        button_1 = Button(
+            image=button_image_1,
+            borderwidth=0,
+            highlightthickness=0,
+            command=lambda: switch('Pemasukan'),
+            relief="flat"
         )
+        button_1.place(
+            x=24.0,
+            y=46.0,
+            width=147.0,
+            height=38.0
+        )
+
+        button_image_2 = PhotoImage(
+            file=relative_to_assets("button_2_1.png"))
+        button_2 = Label(
+            image=button_image_2,
+            borderwidth=0,
+            highlightthickness=0,
+            relief="flat"
+        )
+        button_2.place(
+            x=195.0,
+            y=46.0,
+            width=141.0,
+            height=38.0
+        )
+    elif jenis == 'Pemasukan':
+        button_image_1 = PhotoImage(
+            file=relative_to_assets('button_1.png'))
+        button_1 = Label(
+            image=button_image_1,
+            borderwidth=0,
+            highlightthickness=0,
+            relief="flat"
+        )
+        button_1.place(
+            x=24.0,
+            y=46.0,
+            width=147.0,
+            height=38.0
+        )
+
+        button_image_2 = PhotoImage(
+            file=relative_to_assets("button_2.png"))
+        button_2 = Button(
+            image=button_image_2,
+            borderwidth=0,
+            highlightthickness=0,
+            command=lambda: switch('Pengeluaran'),
+            relief="flat"
+        )
+        button_2.place(
+            x=195.0,
+            y=46.0,
+            width=141.0,
+            height=38.0
+        )
+    else:
+        pass
+
+    del_child()
+    transaksi(df, jenis)
+    scroll_config(None)
+
+max_length = 0
+max_char = ''
 
 def hari(tanggal):
     return tanggal.strftime("%A, %d %b %Y")
@@ -71,32 +159,35 @@ def del_child():
         child.destroy()
 
 def callback(menu):
-    sorted_df = pemasukan.sort_values(by='Tanggal', ascending=False)
+    sorted_df = df.sort_values(by='Tanggal', ascending=False)
     del_child()
-    transaksi(sorted_df)
+    transaksi(sorted_df, jenis1)
     
 def callback1(menu):
-    sorted_df = pemasukan.sort_values(by='Tanggal')
+    sorted_df = df.sort_values(by='Tanggal')
     del_child()
-    transaksi(sorted_df)
+    transaksi(sorted_df, jenis1)
 
 def callback2(menu):
-    sorted_df = pemasukan.sort_values(by='Uang', ascending=False)
+    sorted_df = df.sort_values(by='Uang', ascending=False if jenis1 == 'Pemasukan' else True)
     del_child()
-    transaksi(sorted_df)
+    transaksi(sorted_df, jenis1)
 
 def callback3(menu):
-    sorted_df = pemasukan.sort_values(by='Uang')
+    sorted_df = df.sort_values(by='Uang', ascending=True if jenis1 == 'Pemasukan' else False)
     del_child()
-    transaksi(sorted_df)
+    transaksi(sorted_df, jenis1)
 
-def transaksi(data):
-    if len(data):
-        for j in range(len(data)):
-            value = data.iloc[j, 0]
-            kategori = data.iloc[j, 1]
-            tanggal = data.iloc[j, 2]
-            keterangan = data.iloc[j, 4]
+def transaksi(data, jenis):
+    transaksi = data[data['Jenis'] == jenis]
+
+    posisi_rp = calculate_pos(transaksi)
+    if len(transaksi):
+        for j in range(len(transaksi)):
+            value = transaksi.iloc[j, 0]
+            kategori = transaksi.iloc[j, 1]
+            tanggal = transaksi.iloc[j, 2]
+            keterangan = transaksi.iloc[j, 4]
 
             teks_rp = "+Rp"
 
@@ -161,7 +252,7 @@ def transaksi(data):
                 border=0,
                 font=("Quicksand Bold", 11 * -1)
             )
-            tanggal_label.place(relx=0.040, rely=0.20, anchor=W)
+            tanggal_label.place(relx=0.040, rely=0.175, anchor=W)
 
             kategori_label = Label(
                 frame1,
@@ -174,7 +265,7 @@ def transaksi(data):
             )
             kategori_label.place(relx=0.15, rely=0.5, anchor=W)
 
-            if pandas.isna(pemasukan.iloc[j, 4]):
+            if pandas.isna(transaksi.iloc[j, 4]):
                 pass
             else:
                 keterangan_label = Label(
@@ -186,15 +277,23 @@ def transaksi(data):
                     border=0,
                     font=("Lato Regular", 10 * -1)
                 )
-                keterangan_label.place(relx=0.15, rely=0.75, anchor=W)
+                keterangan_label.place(relx=0.15, rely=0.825, anchor=W)
 
             frame1.grid(row=j)
     else:
         pass
 
-def calculate_pos(length, char):
-    count_dot = char.count(".")
-    rp = 87 - 1.75*(length-1) - 2*count_dot
+def calculate_pos(data):
+    global max_length, max_char
+    for i in range(len(data)):
+        value = data.iloc[i, 0]
+        uang = str(abs(value))
+        if len(uang) > max_length:
+            max_length = len(uang)
+            max_char = locale.format_string("%.0f", int(uang), grouping=True)
+
+    count_dot = max_char.count(".")
+    rp = 87 - 1.75*(max_length-1) - 2*count_dot
     posisi_rp = rp / 100
     return posisi_rp
 
@@ -257,7 +356,7 @@ button_2 = Button(
     image=button_image_2,
     borderwidth=0,
     highlightthickness=0,
-    command=lambda: run_file("riwayat_pengeluaran.py"),
+    command=lambda: switch('Pengeluaran'),
     relief="flat"
 )
 button_2.place(
@@ -328,24 +427,17 @@ canvas_b = Canvas(
 )
 canvas_b.pack(side=TOP, fill=BOTH, expand=1)
 
-scrollbar = ttk.Scrollbar(
-    b,
-    orient=VERTICAL,
-    command=canvas_b.yview,
-)
-
-canvas_b.configure(yscrollcommand=scrollbar.set)
-canvas_b.bind('<Configure>', scroll_config)
+scrollbar()
 
 frame_b = Frame(
     canvas_b,
 )
 frame_b.pack(side=TOP, fill=BOTH)
-scrollbar_width = scrollbar.winfo_reqwidth()
-canvas_b.create_window((canvas_b.winfo_reqwidth()/2 - scrollbar_width/2, 0), window=frame_b, anchor='center')
+scrollbar_width = scrollbar1.winfo_reqwidth()
+canvas_b.create_window((canvas_b.winfo_reqwidth()/2 - scrollbar_width/2, 0), window=frame_b, anchor='n')
 
 try:
-    df = pandas.read_csv(csv, parse_dates=['Tanggal'], dayfirst=True)
+    df = pandas.read_csv(csv_path, parse_dates=['Tanggal'], dayfirst=True)
 except FileNotFoundError:
     jawaban = messagebox.askyesnocancel(
         "File Tidak Ditemukan!",
@@ -365,20 +457,9 @@ except FileNotFoundError:
     else:
         sys.exit()
 
-pemasukan = df[df['Jenis'] == 'Pemasukan']
+df = pandas.read_csv(csv_path, parse_dates=['Tanggal'], dayfirst=True)
 
-max_length = 0
-max_char = ''
-for i in range(len(pemasukan)):
-    value = pemasukan.iloc[i, 0]
-    uang = str(abs(value))
-    if len(uang) > max_length:
-        max_length = len(uang)
-        max_char = locale.format_string("%.0f", int(uang), grouping=True)
-
-posisi_rp = calculate_pos(max_length, max_char)
-
-transaksi(pemasukan)
+transaksi(df, "Pemasukan")
 
 window.grid_rowconfigure(0, weight=1)
 window.grid_columnconfigure(0, weight=1)

@@ -11,7 +11,7 @@ from datetime import datetime
 
 from pathlib import Path
 
-# from tkinter import *
+from tkinter import *
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Frame, messagebox
 
@@ -19,19 +19,17 @@ locale.setlocale(locale.LC_TIME, 'id_ID')
 locale.setlocale(locale.LC_NUMERIC, 'id_ID')
 
 csv = 'keuangan.csv'
+dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(dir, csv)
 
 def hari(tanggal):
-    tanggal_objek = datetime.strptime(tanggal, "%d/%m/%Y")
-    hari = tanggal_objek.strftime("%A, %d %b %Y")
-    return hari
+    return tanggal.strftime("%A, %d %b %Y")
 
 def relative_to_assets(file_path):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(current_dir, "assets\\frame5", file_path)
+    return os.path.join(dir, "assets\\frame5", file_path)
 
 def run_file(nama_file):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    file = os.path.join(current_dir, nama_file)
+    file = os.path.join(dir, nama_file)
     window.destroy()
     subprocess.run(["python", file])
     sys.exit()
@@ -108,7 +106,7 @@ button_2 = Button(
     image=button_image_2,
     borderwidth=0,
     highlightthickness=0,
-    command=lambda: run_file("transaksi_pemasukan.py"),
+    command=lambda: run_file("transaksi.py"),
     relief="flat"
 )
 button_2.place(
@@ -175,7 +173,7 @@ button_1 = Button(
     image=button_image_1,
     borderwidth=0,
     highlightthickness=0,
-    command=lambda: run_file("riwayat_pemasukan.py"),
+    command=lambda: run_file("riwayat.py"),
     relief="flat"
 )
 button_1.place(
@@ -246,7 +244,7 @@ canvas.create_text(
 )
 
 try:
-    df = pandas.read_csv('keuangan.csv')
+    df = pandas.read_csv(csv_path, parse_dates=['Tanggal'], dayfirst=True)
 except FileNotFoundError:
     jawaban = messagebox.askyesno(
         "File Tidak Ditemukan!",
@@ -258,7 +256,7 @@ except FileNotFoundError:
     if jawaban:
         header = ["Uang", "Kategori", "Tanggal", "Jenis", "Keterangan"]
         df = pandas.DataFrame(columns=header)
-        df.to_csv('keuangan.csv', index=False)
+        df.to_csv(csv_path, index=False)
     else:
         sys.exit()
 
@@ -330,8 +328,8 @@ if len(df) >= 1:
         pass
     else:
         canvas.create_text(
-            89.0,
-            492.0,
+            87.0,
+            321.0,
             anchor="nw",
             text=df.iloc[-1, 4],
             fill="#737373",
@@ -406,8 +404,8 @@ if len(df) >= 2:
         pass
     else:
         canvas.create_text(
-            89.0,
-            492.0,
+            87.0,
+            378.0,
             anchor="nw",
             text=df.iloc[-2, 4],
             fill="#737373",
@@ -481,8 +479,8 @@ if len(df) >= 3:
         pass
     else:
         canvas.create_text(
-            89.0,
-            492.0,
+            87.0,
+            435.0,
             anchor="nw",
             text=df.iloc[-3, 4],
             fill="#737373",
@@ -556,7 +554,7 @@ if len(df) >= 4:
         pass
     else:
         canvas.create_text(
-            89.0,
+            87.0,
             492.0,
             anchor="nw",
             text=df.iloc[-4, 4],
