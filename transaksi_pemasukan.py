@@ -23,8 +23,6 @@ def relative_to_assets(file_path):
     return os.path.join(current_dir, "assets\\frame0", file_path)
 
 def run_file(nama_file):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    file = os.path.join(current_dir, nama_file)
     window.destroy()
     subprocess.run(["python", file])
     sys.exit()
